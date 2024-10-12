@@ -736,9 +736,10 @@
      * Play a sound or resume previous playback.
      * @param  {String/Number} sprite   Sprite name for sprite playback or sound id to continue previous.
      * @param  {Boolean} internal Internal Use: true prevents event firing.
+     * @param {Number} initVol volume to initially play at
      * @return {Number}          Sound ID.
      */
-    play: function(sprite, internal) {
+    play: function(sprite, internal, initVol) {
       var self = this;
       var id = null;
 
@@ -800,7 +801,7 @@
         self._queue.push({
           event: 'play',
           action: function() {
-            self.play(soundId);
+            self.play(soundId, false, initVol);
           }
         });
 
@@ -811,7 +812,7 @@
       if (id && !sound._paused) {
         // Trigger the play event, in order to keep iterating through queue.
         if (!internal) {
-          self._loadQueue('play');
+        self._loadQueue('play');
         }
 
         return sound._id;
@@ -858,6 +859,10 @@
           setParams();
           self._refreshBuffer(sound);
 
+          if(typeof initVol !== 'undefined' && 0.0 <= initVol && initVol <= 1.0) {
+            sound._volume = initVol
+            self._emit('volume', sound._id);
+          }
           // Setup the playback params.
           var vol = (sound._muted || self._muted) ? 0 : sound._volume;
           node.gain.setValueAtTime(vol, Howler.ctx.currentTime);
@@ -876,10 +881,10 @@
           }
 
           if (!internal) {
-            setTimeout(function() {
-              self._emit('play', sound._id);
-              self._loadQueue();
-            }, 0);
+          setTimeout(function() {
+            self._emit('play', sound._id);
+            self._loadQueue();
+          }, 0);
           }
         };
 
@@ -920,7 +925,7 @@
                   self._playLock = false;
                   node._unlocked = true;
                   if (!internal) {
-                    self._emit('play', sound._id);
+                  self._emit('play', sound._id);
                   } else {
                     self._loadQueue();
                   }
@@ -1290,17 +1295,25 @@
      * @param  {Number} to   The volume to fade to (0.0 to 1.0).
      * @param  {Number} len  Time in milliseconds to fade.
      * @param  {Number} id   The sound id (omit to fade all sounds).
+     * @param {boolean} interrupt Whether to interrupt existing fades on the given id
      * @return {Howl}
      */
-    fade: function(from, to, len, id) {
+    fade: function(from, to, len, id, interrupt) {
       var self = this;
+
+      if (typeof id !== 'undefined' && !interrupt) {
+        var s = self._soundById(id);
+        if (s && s._fadeTo !== null && s._fadeTo !== undefined) {
+          return self;
+        }
+      }
 
       // If the sound hasn't loaded, add it to the load queue to fade when capable.
       if (self._state !== 'loaded' || self._playLock) {
         self._queue.push({
           event: 'fade',
           action: function() {
-            self.fade(from, to, len, id);
+            self.fade(from, to, len, id, interrupt);
           }
         });
 
