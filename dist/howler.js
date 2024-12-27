@@ -737,7 +737,7 @@
      * @param  {String/Number} sprite   Sprite name for sprite playback or sound id to continue previous.
      * @param  {Boolean} internal Internal Use: true prevents event firing.
      * @param {Number} initVol volume to initially play at
-     * @return {Number}          Sound ID.
+     * @return {Number} Sound ID. Returns negative ID if the sound will be delayed.
      */
     play: function(sprite, internal, initVol) {
       var self = this;
@@ -804,8 +804,7 @@
             self.play(soundId, false, initVol);
           }
         });
-
-        return soundId;
+        return -soundId;
       }
 
       // Don't play the sound if an id was passed and it is already playing.
@@ -852,6 +851,7 @@
 
       // Begin the actual playback.
       var node = sound._node;
+      var mod = 1;
       if (self._webAudio) {
         // Fire this when the sound is ready to play to begin Web Audio playback.
         var playWebAudio = function() {
@@ -898,6 +898,7 @@
 
           // Cancel the end timer.
           self._clearTimer(sound._id);
+          mod = -1;
         }
       } else {
         // Fire this when the sound is ready to play to begin HTML5 Audio playback.
@@ -1003,7 +1004,7 @@
         }
       }
 
-      return sound._id;
+      return mod*sound._id;
     },
 
     /**
