@@ -1427,17 +1427,17 @@
     _stopFade: function(id) {
       var self = this;
       var sound = self._soundById(id);
-
-      if (sound && sound._interval) {
+      if (sound) {
         if (self._webAudio) {
           sound._node.gain.cancelScheduledValues(Howler.ctx.currentTime);
         }
-
-        clearInterval(sound._interval);
-        sound._interval = null;
-        self.volume(sound._fadeTo, id);
-        sound._fadeTo = null;
-        self._emit('fade', id);
+        if(sound._interval) {
+          clearInterval(sound._interval);
+          sound._interval = null;
+          self.volume(sound._fadeTo, id);
+          sound._fadeTo = null;
+          self._emit('fade', id);
+        }
       }
 
       return self;
